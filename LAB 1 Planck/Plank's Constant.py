@@ -30,11 +30,11 @@ V_err = 0.0001
 I_err = 0.0010
 inter = []
 errors=[]
-data = pd.read_excel('planck.xlsx').dropna()
+data = pd.read_excel('C:/Users/firew/Documents/GitHub/imphys/LAB 1 Planck/planck.xlsx').dropna()
  # Requires that xlsx file is in same dir as code.
-                                             # Dropna removes NaN rows which cause the ODR module to malfunction. this again took a while to figure out.
+                                             # Dropna removes NaN rows which cause the ODR module to malfunction.
 
-def solve(m,c): #solving for the x intercept
+def solve(m,c): #solving for the x intercept, lowkey uneeded function
     return -c/m
 
 def propagate(x,y,m,c): #calculating the absolute uncertainty in the x intercept 
@@ -48,7 +48,7 @@ def f(B,x):
     return B[0]*x + B[1]
 
 
-for i in range(1, 6): #probably a better way to generate each graph but im bad at coding so here we are.
+for i in range(1, 6):
     plt.clf()
     match i:
         case 1:
@@ -78,37 +78,36 @@ for i in range(1, 6): #probably a better way to generate each graph but im bad a
     a,b = fit.beta #slope = a, b = intercept
     a_err, b_err = fit.sd_beta #error of each a and b
     inter.append(solve(a,b))
-    errors.append(propagate(a_err, b_err, a, b)) #appending threshold voltages and their uncertainties to a list for use in next graph
+    errors.append(propagate(a_err, b_err, a, b)) #appending error in the stopping voltage and the stopping voltage to a list used to fill out dataframe after loop
     print(f"Slope = {a:3f} +- {a_err:.3f}")
     print(f"Intercept = {b:.3f} +- {b_err:.3f}")
-    plt.errorbar(x, y,xerr=100*V_err, yerr=1000*I_err, fmt ='o', label = 'data') #error bars enlarged for visual purposes
+    plt.errorbar(x, y,xerr=100*V_err, yerr=1000*I_err, fmt ='o', label = 'data') #Error bars factored up
     plt.plot(x,f([a,b],x), label=f'y = {a:.2f}x + {b:.2f}' , color = text.lower())
     plt.legend
     plt.xlabel('V')
     plt.ylabel('I')
-    plt.title("Linear I-V for " + text + " L.E.D (100x horizontal 1000x vertical error bars)")
+    plt.title("Linear I-V for " + text + " L.E.D (100x horizontal 1000x vertical error bars)") #for easy visualisation, data bars in this experiment are too small 
     plt.grid(True)
     plt.show
     plt.savefig(text)
     
 plt.clf()
-planckData = { #creating data frame for plotting the Vt vs 1/lambda graph
+planckData = {  #Setting up data frame with info needed for final plot; namely wavelength, stopping voltage and the related uncertainties
     "Threshold Voltages": inter,
     "Voltage Errors": errors,
     'Wavelengths': data[WL],
     'FWHM': data[FWHM]
     }
 PlanckDF = pd.DataFrame(planckData)
-wave_recip = 'Reciprocal of the Wavelength'
+wave_recip = 'Reciprocal of the Wavelength' 
 lambda_sd = 'Standard deviation of 1/lambda'
-PlanckDF[lambda_sd] = (PlanckDF[FWHM]*10**-9)/2.355 * ((PlanckDF['Wavelengths']*(10**-9))**-2) # calculating uncertainty in 1/lambda according to formulas in back of lab manual
+PlanckDF[lambda_sd] = (PlanckDF[FWHM]*10**-9)/2.355 * ((PlanckDF['Wavelengths']*(10**-9))**-2) #calculation of the uncertainty in 1/lambda, used formula in the appendix of the lab manual. basically the power rule 
 PlanckDF[wave_recip] = 1/(PlanckDF['Wavelengths']*(10**-9))
 x = PlanckDF[wave_recip]
 y = PlanckDF["Threshold Voltages"]
-x_err = PlanckDF['Standard deviation of 1/lambda'].tolist() # converting to list from panda series is required for ODR to work, this took me too long to trouble shoot
-y_err = PlanckDF["Voltage Errors"].tolist()
-print(type(y_err))
-model2 = odr.Model(f)
+x_err = PlanckDF['Standard deviation of 1/lambda'].tolist()
+y_err = PlanckDF["Voltage Errors"].tolist()                  # pandas series dont work with odr
+model2 = odr.Model(f)                                       #i spent an hour trying to figure out what was wrong (convert pandas series to lists always or suffer)
 data3 = odr.RealData(x,y)
 fit = odr.ODR(data3, model2, beta0 = [1,0]).run()
 c,d = fit.beta #slope = c, d = intercept
@@ -125,5 +124,6 @@ plt.grid(True)
 plt.show
 name = 'plankgraph'
 plt.savefig('plankgraph')
-
-print(f"h ={c*(sci.constants.e)/(sci.constants.c)} +- {c_err}")
+h =c*(sci.constants.e)/(sci.constants.c) 
+dh = (c_err/c) * h #error in h using the fact that relative error in the gradient is the same as the relative error in h
+print(f"{h} = +- {dh}") #self -explanatory calculation of h through the gradient, c and e. 
