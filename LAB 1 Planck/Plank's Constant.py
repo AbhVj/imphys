@@ -89,7 +89,7 @@ for i in range(1, 6):
     plt.title("Linear I-V for " + text + " L.E.D (100x horizontal 1000x vertical error bars)") #for easy visualisation, data bars in this experiment are too small 
     plt.grid(True)
     plt.show
-    plt.savefig(text)
+    plt.savefig("C:/Users/firew/Documents/GitHub/imphys/LAB 1 Planck/Figures/" + text)
     
 plt.clf()
 planckData = {  #Setting up data frame with info needed for final plot; namely wavelength, stopping voltage and the related uncertainties
@@ -123,7 +123,7 @@ plt.title("Threshold Voltage vs 1/λ")
 plt.grid(True)
 plt.show
 name = 'plankgraph'
-plt.savefig('plankgraph')
+plt.savefig('C:/Users/firew/Documents/GitHub/imphys/LAB 1 Planck/Figures/plankgraph')
 h =c*(sci.constants.e)/(sci.constants.c) 
 dh = (c_err/c) * h #error in h using the fact that relative error in the gradient is the same as the relative error in h
 print(f"{h} = +- {dh}") #self -explanatory calculation of h through the gradient, c and e. 
