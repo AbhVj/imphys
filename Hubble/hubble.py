@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np 
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+
 h_beta = 486.1 *(10**-9) # wavelength of H beta line 
 c_l = 2.9979 *(10**8)    # speed of light
 
@@ -46,7 +47,8 @@ observ_nums = []
 velocities = []
 vel_err = []
 distances=[]
-for i  in range(0,50, 2):                           #looping through the spectral data indexes, skipping two columns each iteration as each pair of columns yields the frequency and intensity data
+print(len(spec_data.columns))
+for i  in range(0,len(spec_data.columns), 2):                           #looping through the spectral data indexes, skipping two columns each iteration as each pair of columns yields the frequency and intensity data
     x = spec_data.iloc[:, i].to_numpy()             #grabbing x data from one column
     y = spec_data.iloc[:, i+1].to_numpy()           #grabbing y data from the adjacent column
     fit, fit_cov = curve_fit(gauss, x , y, guess(x,y))
@@ -71,19 +73,29 @@ x = hubbleDF['Distance']
 y = hubbleDF['Velocities']/1000 #converting to km/s  (same with errors below)
 y_error = hubbleDF['St.Deviation of Velocity']/1000 
 print(y_error)
-fit, lin_cov = curve_fit(linear, x,y, sigma=y_error)
-m = fit[0]
-#c  =fit[1]
-m_err = np.sqrt(np.diag(lin_cov)[0])
-#c_err = np.sqrt(np.diag(lin_cov)[1])
-print(f"Slope = {fit[0]:20f} +- {m_err:.20f}")
-#print(f"Intercept = {c:.3f} +- {c_err:.3f}")
-plt.errorbar(x, y, yerr=y_error, fmt ='o', label = 'data')
+
+#two fitting aproaches can be taken, np.polyfit or curve_fit.
+#Polyfit with degree 1 is currently used.
+
+fit, lin_cov = curve_fit(linear, x,y, sigma=y_error) 
+fit2, lin_cov2 = np.polyfit(x,y ,deg =1, w = 1/y_error, cov = True) 
+m = fit2[0]
+m_err = np.sqrt(np.diag(lin_cov2)[0])
+print(f"Slope = {fit2[0]:20f} +- {m_err:.20f}")
+
+#Plotting data and fits 
+fig, ax = plt.subplots()
+plt.errorbar(x, y, yerr=y_error, fmt ='o', label = 'Raw Data')
 plt.plot(x,linear(x, m), label=f'V = {m:.2f}D ' , color = 'red')
 plt.legend()
 plt.xlabel('Distance  (Mpc)')
 plt.ylabel('Redshift Inferred Velocity (km/s)')
 plt.title("Redshifted Velocity vs Distance from Earth")
-plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Hubble/Figures/hubble')
 plt.grid(True)
-plt.show
+
+#Code in the next 2 lines adapted from: https://matplotlib.org/stable/gallery/text_labels_and_annotations/placing_text_boxes.html
+props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+ax.text(0.05, 0.95, f"H_0 = ({m:.3f} ± {m_err:.3f}) km/s/Mpc", transform=ax.transAxes, fontsize=14,verticalalignment='top', bbox=props)
+plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Hubble/Figures/hubble')
+plt.show()
+
