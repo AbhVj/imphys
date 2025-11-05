@@ -37,10 +37,11 @@ plt.plot(x,f([a,b],x), label=f'y = {a:.2f}x + {b:.2f}' , color = 'blue')
 plt.legend
 plt.xlabel('Distance (m)')
 plt.ylabel('Phase Difference (rad)')
-plt.title("Phase Difference versus Distance")
+plt.title("Phase Difference vs Detector Distance")
 plt.grid(True)
 plt.savefig('Sound Graph')
 plt.show
 v = (2*math.pi/a) *freq #a = 2pi/lambda, v = f(lambda)
 dv = v *(a_err/a)
 print(f"The value of the speed of sound is {v} +- {dv}")
+print((343.3-v)/dv)
