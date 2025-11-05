@@ -47,7 +47,7 @@ observ_nums = []
 velocities = []
 vel_err = []
 distances=[]
-print(len(spec_data.columns))
+
 for i  in range(0,len(spec_data.columns), 2):                           #looping through the spectral data indexes, skipping two columns each iteration as each pair of columns yields the frequency and intensity data
     x = spec_data.iloc[:, i].to_numpy()             #grabbing x data from one column
     y = spec_data.iloc[:, i+1].to_numpy()           #grabbing y data from the adjacent column
@@ -87,15 +87,18 @@ print(f"Slope = {fit2[0]:20f} +- {m_err:.20f}")
 fig, ax = plt.subplots()
 plt.errorbar(x, y, yerr=y_error, fmt ='o', label = 'Raw Data')
 plt.plot(x,linear(x, m), label=f'V = {m:.2f}D ' , color = 'red')
+#extrapolating trend line to origin
+x2 = np.linspace(0, x.min())
+plt.plot(x2,linear(x2, m), label=f'Extrapolated Fit ' , color = 'red', linestyle = 'dashed')
 plt.legend()
 plt.xlabel('Distance  (Mpc)')
 plt.ylabel('Redshift Inferred Velocity (km/s)')
 plt.title("Redshifted Velocity vs Distance from Earth")
 plt.grid(True)
-
+plt.axis([0, 300, 0, 20000])
 #Code in the next 2 lines adapted from: https://matplotlib.org/stable/gallery/text_labels_and_annotations/placing_text_boxes.html
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-ax.text(0.05, 0.95, f"H_0 = ({m:.3f} ± {m_err:.3f}) km/s/Mpc", transform=ax.transAxes, fontsize=14,verticalalignment='top', bbox=props)
+ax.text(0.05, 0.95, f"H_0 = ({m:.3f} ± {m_err:.3f}) km/s/Mpc", transform=ax.transAxes, fontsize=13,verticalalignment='top', bbox=props)
 plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Hubble/Figures/hubble')
 plt.show()
 
