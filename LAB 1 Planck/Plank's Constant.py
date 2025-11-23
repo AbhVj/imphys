@@ -116,7 +116,7 @@ print(f"Slope = {c:20f} +- {c_err:.20f}")
 print(f"Intercept = {d:.3f} +- {d_err:.3f}")
 plt.errorbar(x, y,xerr=x_err, yerr=y_err, fmt ='o', label = 'data')
 plt.plot(x,f([c,d],x), label=f'y = {c:.2f}x + {d:.2f}' , color = 'red')
-plt.legend
+plt.legend()
 plt.xlabel('1/λ  (1/m)')
 plt.ylabel('Threshold Voltage (Volts)')
 plt.title("Threshold Voltage vs 1/λ")

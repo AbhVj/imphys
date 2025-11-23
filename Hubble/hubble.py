@@ -30,11 +30,8 @@ def guess(x,y):                                                              #re
     y_corr = y - line                       #y_corr is the data minus the estimated linear background
     a_guess = y_corr.max()                  # the maximum of the corrected data is guessed to be the amplitude, the x position of the largest value is guessed to be the mean
     mu_guess = x[np.where(y_corr == a_guess)[0][0]] 
-    half_max = 0.5*a_guess
-    cross = np.where(y_corr>= half_max)[0]   # points at which we are at half max 
-    FWHM = x[cross[-1]]-x[cross[0]]          #calculating full width half maximum
-    sig_guess = FWHM/2.355  
-    print(sig_guess, sig_guess)           
+    sig_guess = 2600000000000               #constant guess for sigma determined through visual inspection of an initial plot 
+            
     return [a_guess, mu_guess, sig_guess , grad_guess, c_guess]
 
 def vel(f,sf):                              #function that takes in the frequency and its uncertainty and returns velocity and uncertainty in the velocity. (uses relativistic doppler equation)
@@ -56,13 +53,7 @@ distances=[]
 for i  in range(0,len(spec_data.columns), 2):                           #looping through the spectral data indexes, skipping two columns each iteration as each pair of columns yields the frequency and intensity data
     x = spec_data.iloc[:, i].to_numpy()             #grabbing x data from one column
     y = spec_data.iloc[:, i+1].to_numpy()           #grabbing y data from the adjacent column
-    
-    if spec_data.columns[i] == '21251':                            #fwhm method fails for 21251, instead using standard deviation as guess for sigma
-        g_p = guess(x,y)
-        guesses = [g_p[0], g_p[1], np.std(x), g_p[3], g_p[4]]
-        fit, fit_cov = curve_fit(gauss, x , y, p0=guesses)
-    else:    
-        fit, fit_cov = curve_fit(gauss, x , y, p0 = guess(x,y))
+    fit, fit_cov = curve_fit(gauss, x , y, p0 = guess(x,y))
     f = fit[1]
     sf = np.sqrt(np.diag(fit_cov)[1]) #scipy.optimise.curve_fit gives uncertainties as the sqrt of the diagonals of the covariance matrix
     observ_nums.append(spec_data.columns[i])
@@ -83,16 +74,18 @@ hubbleDF['Distance'] = distances
 x = hubbleDF['Distance']
 y = hubbleDF['Velocities']/1000 #converting to km/s  (same with errors below)
 y_error = hubbleDF['St.Deviation of Velocity']/1000 
-print(y)
+
 
 #two fitting aproaches can be taken, np.polyfit or curve_fit.
 #Polyfit with degree 1 is currently used.
 
-fit, lin_cov = curve_fit(linear, x,y, sigma=y_error) 
-fit2, lin_cov2 = np.polyfit(x,y ,deg =1, w = 1/y_error, cov = True) 
-m = fit2[0]
-m_err = np.sqrt(np.diag(lin_cov2)[0])
-print(f"Slope = {fit2[0]:20f} +- {m_err:.20f}")
+fit, lin_cov = curve_fit(linear, x,y, sigma=y_error)  
+fit2, lin_cov2 = np.polyfit(x,y ,deg =1, w = 1/y_error, cov = True)  
+m = fit2[0] 
+m_err1 = np.sqrt(np.diag(lin_cov)[0])
+m_err2 = np.sqrt(np.diag(lin_cov2)[0])
+print(f"Polyfit generated slope = {fit2[0]:20f} +- {m_err2:.20f}")
+print(f"Curvefit generated slope = {fit[0]:20f} +- {m_err1:.20f}")
 
 #Plotting data and fits 
 fig, ax = plt.subplots()
@@ -109,6 +102,6 @@ plt.grid(True)
 plt.axis([0, 300, 0, 20000]) #making origin visible
 #Code in the next 2 lines adapted from: https://matplotlib.org/stable/gallery/text_labels_and_annotations/placing_text_boxes.html
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-ax.text(0.05, 0.95, f"H_0 = ({m:.3f} ± {m_err:.3f}) km/s/Mpc", transform=ax.transAxes, fontsize=13,verticalalignment='top', bbox=props)
+ax.text(0.05, 0.95, f"H_0 = ({m:.3f} ± {m_err2:.3f}) km/s/Mpc", transform=ax.transAxes, fontsize=13,verticalalignment='top', bbox=props)
 plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Hubble/Figures/hubble')
 plt.show()
