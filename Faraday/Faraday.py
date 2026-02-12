@@ -8,15 +8,14 @@ import math
 #Column Headers
 P_p= 'P_p'
 P_s = 'P_s'
-data = pd.read_excel('C:/Users/firew/Documents/GitHub/imphys/Faraday/Data/Faraday.xlsx').dropna() #ur directory, dropna to prevent NaN errors
-
+data = pd.read_excel('C:/Users/firew/Documents/GitHub/imphys/Faraday/Data/Faraday2.xlsx') #ur directory, dropna to prevent NaN errors
 def f(B,x): #Linear fit function
     return B[0]*x + B[1]
 sP_p = data['sP_p'].to_numpy()
 sP_s = data['sP_s'].to_numpy()
 
-x = data[P_s]
-y = data[P_p]
+x = data[P_s].to_numpy()
+y = data[P_p].to_numpy()
 print(x)
 print(y)
 print(sP_s)
@@ -33,15 +32,16 @@ plt.plot(x,f([a,b],x), label=f'y = {a:.2f}x + {b:.2f}' , color = 'blue')
 plt.legend()
 plt.xlabel('Power in the Secondary Coil (W)')
 plt.ylabel('Power in the Primary Coil (W)')
-plt.title("Power in the Primary Coil  vs Power in the Secondary Coil (of a transformer) ")
+plt.title("Power in the Primary Coil  vs Power in the Secondary Coil (Core)")
 plt.grid(True)
-plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Faraday/Figures/Session1')
+print(a )
+print(a_err)
 eff = 1/a
 d_eff = (a_err/a) *eff
 print(f"The efficency is  {eff} +- {d_eff}")
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 ax.text(0.05, 0.95, f"n = ({eff:.2e} ± {d_eff:.2e})", transform=ax.transAxes, fontsize=13,verticalalignment='top', bbox=props)
-plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Faraday/Figures/Session1')
+#plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Faraday/Figures/Core')
 plt.show()
 
 
