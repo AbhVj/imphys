@@ -41,7 +41,7 @@ d_eff = (a_err/a) *eff
 print(f"The efficency is  {eff} +- {d_eff}")
 props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
 ax.text(0.05, 0.95, f"n = ({eff:.2e} ± {d_eff:.2e})", transform=ax.transAxes, fontsize=13,verticalalignment='top', bbox=props)
-#plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Faraday/Figures/Core')
+#plt.savefig('C:/Users/firew/Documents/GitHub/imphys/Faraday/Figuraes/Core')
 plt.show()
 
 
