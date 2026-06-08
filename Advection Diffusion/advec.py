@@ -3,25 +3,38 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 # ============================================================
-# PARAMETERS
+# DOMAIN PARAMETERS
 # ============================================================
 
-Nx, Ny = 200, 100
-Lx, Ly = 2.0, 1.0
+Nx, Ny = 200, 200
+
+Lx, Ly = 2.0, 2.0
 
 dx = Lx / Nx
 dy = Ly / Ny
 
-dt = 0.0002
-Nt = 3000
+# ============================================================
+# TIME PARAMETERS
+# ============================================================
 
-D = 0.01
+dt = 0.0001
+Nt = 4000
 
-u = 1.0
-v = 0.0
+# physics steps per rendered frame
+steps_per_frame = 50
 
 # ============================================================
-# GRID
+# PHYSICAL PARAMETERS
+# ============================================================
+
+# very weak physical diffusion
+D = 1e-6
+
+# vortex angular strength
+strength = 8.0
+
+# ============================================================
+# CREATE GRID
 # ============================================================
 
 x = np.linspace(0, Lx, Nx)
@@ -30,15 +43,25 @@ y = np.linspace(0, Ly, Ny)
 X, Y = np.meshgrid(x, y)
 
 # ============================================================
+# VORTEX VELOCITY FIELD
+# ============================================================
+
+x0 = Lx / 2
+y0 = Ly / 2
+
+# solid-body rotation
+
+u = -strength * (Y - y0)
+v =  strength * (X - x0)
+
+# ============================================================
 # INITIAL DYE BLOB
 # ============================================================
 
-# Blob near left boundary
-
 c = np.exp(
     -(
-        (X - 0.2)**2 +
-        (Y - 0.5)**2
+        (X - 0.7)**2 +
+        (Y - 1.0)**2
     ) / 0.005
 )
 
@@ -46,21 +69,32 @@ c = np.exp(
 # PLOT SETUP
 # ============================================================
 
-fig, ax = plt.subplots(figsize=(10,4))
+fig, ax = plt.subplots(figsize=(7,7))
 
 im = ax.imshow(
     c,
     origin='lower',
     extent=[0, Lx, 0, Ly],
-    cmap='viridis',
+    cmap='plasma',
     vmin=0,
-    vmax=0.2,
-    aspect='auto'
+    vmax=1
 )
 
 plt.colorbar(im, ax=ax, label='Concentration')
 
-ax.set_title("Advection-Diffusion of Dye Blob")
+# streamlines of velocity field
+
+ax.streamplot(
+    x,
+    y,
+    u,
+    v,
+    color='white',
+    density=1.5,
+    linewidth=0.7
+)
+
+ax.set_title("2D Advection-Diffusion with Upwind Scheme")
 ax.set_xlabel("x")
 ax.set_ylabel("y")
 
@@ -72,71 +106,140 @@ def update(frame):
 
     global c
 
-    c_new = c.copy()
-
     # --------------------------------------------------------
-    # DERIVATIVES
+    # ADVANCE MANY PHYSICS STEPS PER FRAME
     # --------------------------------------------------------
 
-    c_x = (
-        c[1:-1, 2:] - c[1:-1, :-2]
-    ) / (2 * dx)
+    for _ in range(steps_per_frame):
 
-    c_y = (
-        c[2:, 1:-1] - c[:-2, 1:-1]
-    ) / (2 * dy)
+        c_new = c.copy()
 
-    c_xx = (
-        c[1:-1, 2:]
-        - 2 * c[1:-1, 1:-1]
-        + c[1:-1, :-2]
-    ) / dx**2
+        # ----------------------------------------------------
+        # INTERIOR VELOCITY FIELD
+        # ----------------------------------------------------
 
-    c_yy = (
-        c[2:, 1:-1]
-        - 2 * c[1:-1, 1:-1]
-        + c[:-2, 1:-1]
-    ) / dy**2
+        u_inner = u[1:-1, 1:-1]
+        v_inner = v[1:-1, 1:-1]
 
-    # --------------------------------------------------------
-    # PHYSICS TERMS
-    # --------------------------------------------------------
+        # ====================================================
+        # UPWIND FIRST DERIVATIVES
+        # ====================================================
 
-    advection = u * c_x + v * c_y
+        # ----------------------------------------------------
+        # x derivative
+        # ----------------------------------------------------
 
-    diffusion = D * (c_xx + c_yy)
+        c_x = np.where(
 
-    # --------------------------------------------------------
-    # UPDATE INTERIOR
-    # --------------------------------------------------------
+            u_inner > 0,
 
-    c_new[1:-1, 1:-1] = (
-        c[1:-1, 1:-1]
-        + dt * (-advection + diffusion)
-    )
+            # backward difference
+            (
+                c[1:-1, 1:-1]
+                - c[1:-1, :-2]
+            ) / dx,
 
-    # --------------------------------------------------------
-    # BOUNDARY CONDITIONS
-    # --------------------------------------------------------
+            # forward difference
+            (
+                c[1:-1, 2:]
+                - c[1:-1, 1:-1]
+            ) / dx
+        )
 
-    # Top/bottom no-flux
+        # ----------------------------------------------------
+        # y derivative
+        # ----------------------------------------------------
 
-    c_new[0, :] = c_new[1, :]
-    c_new[-1, :] = c_new[-2, :]
+        c_y = np.where(
 
-    # Left boundary:
-    # allow clean inflow/outflow behaviour
+            v_inner > 0,
 
-    c_new[:, 0] = c_new[:, 1]
+            # backward difference
+            (
+                c[1:-1, 1:-1]
+                - c[:-2, 1:-1]
+            ) / dy,
 
-    # Right boundary:
-    # zero-gradient outflow
+            # forward difference
+            (
+                c[2:, 1:-1]
+                - c[1:-1, 1:-1]
+            ) / dy
+        )
 
-    c_new[:, -1] = c_new[:, -2]
+        # ====================================================
+        # SECOND DERIVATIVES (DIFFUSION)
+        # ====================================================
 
-    c = c_new
+        c_xx = (
+            c[1:-1, 2:]
+            - 2*c[1:-1, 1:-1]
+            + c[1:-1, :-2]
+        ) / dx**2
+
+        c_yy = (
+            c[2:, 1:-1]
+            - 2*c[1:-1, 1:-1]
+            + c[:-2, 1:-1]
+        ) / dy**2
+
+        # ====================================================
+        # PHYSICS TERMS
+        # ====================================================
+
+        advection = (
+            u_inner * c_x
+            + v_inner * c_y
+        )
+
+        diffusion = D * (c_xx + c_yy)
+
+        # ====================================================
+        # EXPLICIT EULER UPDATE
+        # ====================================================
+
+        c_new[1:-1, 1:-1] = (
+
+            c[1:-1, 1:-1]
+
+            + dt * (
+
+                -advection
+                + diffusion
+
+            )
+        )
+
+        # ====================================================
+        # BOUNDARY CONDITIONS
+        # ====================================================
+
+        # no-flux top/bottom
+
+        c_new[0, :] = c_new[1, :]
+        c_new[-1, :] = c_new[-2, :]
+
+        # no-flux left/right
+
+        c_new[:, 0] = c_new[:, 1]
+        c_new[:, -1] = c_new[:, -2]
+
+        # update concentration field
+
+        c = c_new
+
+    # ========================================================
+    # UPDATE VISUALISATION
+    # ========================================================
 
     im.set_array(c)
+
+    # dynamic colour scaling
+
+    im.set_clim(
+        vmin=0,
+        vmax=np.max(c)
+    )
 
     return [im]
 
@@ -149,7 +252,9 @@ anim = FuncAnimation(
     update,
     frames=Nt,
     interval=5,
-    blit=True
+    blit=False
 )
+
+plt.tight_layout()
 
 plt.show()
